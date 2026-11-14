@@ -84,6 +84,16 @@ body{margin:0;background:var(--sky);color:var(--ink);font-family:var(--body);fon
 .legend svg{width:18px;height:18px}
 .up{text-align:left;display:grid;gap:3px;padding:12px 14px}
 .up b{font:700 18px var(--display)}
+.up.ic{grid-template-columns:auto 1fr;column-gap:12px;align-items:center}
+.up .upt{display:grid;gap:3px}
+.upi{border-radius:50%;display:grid;place-items:center;flex:none;font-style:normal;position:relative}
+.up .upi{width:54px;height:54px}
+.upi.A{background:#ffd9cc}.upi.D{background:#d3ecfa}.upi.U{background:#fbe6b0}
+.bicons{display:inline-flex;flex-wrap:wrap;gap:6px;justify-content:center;vertical-align:middle}
+.bicons .upi{width:34px;height:34px}
+.bicons .upi b{position:absolute;right:-5px;bottom:-5px;font:700 11px/1.4 var(--display);background:var(--ink);color:var(--paper);border-radius:999px;padding:0 5px}
+.buildRow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}
+.buildRow .bl{font:700 13px var(--body);color:var(--ink-soft)}
 .up span{font:500 14px var(--body);line-height:1.4}
 .up small{font:700 12px var(--body);color:var(--ink-soft)}
 #build{min-height:1em}
@@ -257,7 +267,7 @@ button:focus-visible{outline:3px solid var(--gold-deep);outline-offset:2px}
     <button class="btn primary play" id="bPlay">Play</button>
     <div class="homeSub" id="homeSub"></div>
   </div>
-  <span class="ver" aria-label="Version 72">v72</span>
+  <span class="ver" aria-label="Version 73">v73</span>
 </div>
 <div id="custom" class="overlay sheet" hidden>
   <div class="modal card">
@@ -341,6 +351,7 @@ button:focus-visible{outline:3px solid var(--gold-deep);outline-offset:2px}
     <div class="stars3" id="endStars" hidden></div>
     <div><span class="big" id="endScore">0</span><span class="tag" id="endBest" hidden>New best!</span></div>
     <p id="endText"></p>
+    <div id="endBuild" class="buildRow"></div>
     <ul id="endGoals" class="goals"></ul>
     <div class="btns"><button class="btn primary" id="bNext" hidden>Next level</button><button class="btn primary" id="bRetry">Run again</button><button class="btn" id="bArmory">Home</button><button class="btn" id="bRankEnd" hidden>Rankings</button></div>
   </div>
@@ -544,6 +555,39 @@ function enterNode(id){ const M=run.map, n=M.nodes[id]; M.at=id; M.path.push(id)
   if (n.type==='chest'){ state='pick'; run.picksLeft=1; run.bonus=null; return 'chest'; }
   if (n.type==='shop'){ state='pick'; run.shop={node:n.id,offers:offer(),sold:{}}; return 'shop'; }
   startWave(n); return 'fight'; }
+// upgrade icons: flat cel-shaded objects (thick ink outline, hard shadow, one highlight), drawn once as SVG strings
+const UPCAT={twin:'A',splash:'A',pierce:'A',bounce:'A',heavy:'A',fire:'A',chain:'A',heart:'D',leech:'D',shield:'D',reload:'U',range:'U',wheels:'U',mud:'U',frenzy:'U'};
+const UPSVG=(()=>{ const O='#2a2233', SW=3.4;
+let n=0;
+// a filled shape with a hard shadow clipped inside it and the outline on top
+const shape=(d,base,shade,shadeD,extra='')=>{ const id='c'+(n++); return `<clipPath id="${id}"><path d="${d}"/></clipPath><path d="${d}" fill="${base}"/><g clip-path="url(#${id})"><path d="${shadeD}" fill="${shade}"/>${extra}</g><path d="${d}" fill="none" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>`; };
+const circ=(cx,cy,r)=>`M${cx-r} ${cy}a${r} ${r} 0 1 0 ${2*r} 0a${r} ${r} 0 1 0 ${-2*r} 0Z`;
+const hl=(x,y,rx,ry,rot=-30)=>`<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#fff" transform="rotate(${rot} ${x} ${y})"/>`;
+const ball=(cx,cy,r)=>shape(circ(cx,cy,r),'#5a5070','#3a3248',`M${cx-r-2} ${cy+r*.15}C${cx-r*.3} ${cy+r*.7} ${cx+r*.6} ${cy+r*.3} ${cx+r+2} ${cy-r*.5}V${cy+r+2}H${cx-r-2}Z`)+hl(cx-r*.38,cy-r*.42,r*.26,r*.16);
+const heartD=(x,y,s)=>`M${x} ${y+13*s}C${x-6*s} ${y+9*s} ${x-15*s} ${y+3*s} ${x-15*s} ${y-5*s}C${x-15*s} ${y-12*s} ${x-9*s} ${y-15*s} ${x-4.5*s} ${y-13.5*s}C${x-2*s} ${y-12.5*s} ${x} ${y-10*s} ${x} ${y-8*s}C${x} ${y-10*s} ${x+2*s} ${y-12.5*s} ${x+4.5*s} ${y-13.5*s}C${x+9*s} ${y-15*s} ${x+15*s} ${y-12*s} ${x+15*s} ${y-5*s}C${x+15*s} ${y+3*s} ${x+6*s} ${y+9*s} ${x} ${y+13*s}Z`;
+const heart=(x,y,s)=>shape(heartD(x,y,s),'#e8413c','#b82a30',`M${x-16*s} ${y+2*s}C${x-6*s} ${y+8*s} ${x+8*s} ${y+4*s} ${x+16*s} ${y-6*s}V${y+16*s}H${x-16*s}Z`)+hl(x-8*s,y-7*s,3.6*s,2.2*s,-40);
+const I={
+twin:`${ball(22,38,13)}${ball(42,26,13)}`,
+splash:`<path d="M40 14c4-6 10-6 13-2" fill="none" stroke="${O}" stroke-width="6" stroke-linecap="round"/><path d="M40 14c4-6 10-6 13-2" fill="none" stroke="#c98a4c" stroke-width="2.6" stroke-linecap="round"/>${shape('M37 15l6 5-3 4-6-5z','#8d84a2','#6e6684','M34 19l6 5 3-4z')}${ball(28,38,18)}<path d="M54 2l2 5 5 1-4 3 1 5-4-3-5 2 2-5-3-4 5 0z" fill="#ffd24a" stroke="${O}" stroke-width="2.4" stroke-linejoin="round"/><circle cx="54.6" cy="8.6" r="2.2" fill="#fff6c0"/>`,
+pierce:`<path d="M4 26h12M2 34h10M6 42h10" stroke="${O}" stroke-width="3.4" stroke-linecap="round"/>${shape('M18 24h22c8 0 16 4 20 8-4 4-12 8-20 8H18c-2 0-3-1-3-3V27c0-2 1-3 3-3z','#c9c3d6','#9a92b0','M14 33h48v10H14z')}<path d="M27 24v16" stroke="${O}" stroke-width="3"/>${hl(40,28,7,2,0)}`,
+bounce:`${shape('M12 58h40v-4H12z','#8d84a2','#6e6684','M12 56h40v4H12z')}<path d="M18 54l28-5-28-5 28-5-28-5 28-5" fill="none" stroke="${O}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 54l28-5-28-5 28-5-28-5 28-5" fill="none" stroke="#c9c3d6" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>${ball(32,16,11)}`,
+reload:`<path d="M14 12l6 5M50 12l-6 5" stroke="${O}" stroke-width="3.4" stroke-linecap="round"/>${shape(circ(13,13,6),'#e8413c','#b82a30','M5 14h16v8H5z')}${shape(circ(51,13,6),'#e8413c','#b82a30','M43 14h16v8H43z')}${shape(circ(32,36,22),'#e8413c','#b82a30',`M8 40c10 10 30 12 48-4v24H8z`)}${shape(circ(32,36,16),'#fffaf0','#e6dccb','M14 42c8 8 22 8 36-2v18H14z')}<path d="M32 36V25M32 36l7 5" stroke="${O}" stroke-width="3.4" stroke-linecap="round"/><circle cx="32" cy="36" r="2.4" fill="${O}"/><path d="M24 58l-3 4M40 58l3 4" stroke="${O}" stroke-width="3.4" stroke-linecap="round"/>${hl(20,24,4,2.4,-40)}`,
+range:`${shape('M6 40l38-20 4 8-38 20z','#c98a4c','#9a6234','M6 44l42-14 2 6-40 14z')}${shape('M40 18l12-6 6 12-12 6z','#ffd24a','#d99a1c','M44 28l14-6 2 4-14 6z')}${shape('M18 36l8-4 4 8-8 4z','#ffd24a','#d99a1c','M20 42l10-4 2 4-10 4z')}<path d="M24 50l-6 10M30 48l6 12" stroke="${O}" stroke-width="3.4" stroke-linecap="round"/>${hl(30,28,6,1.6,-28)}`,
+heart:`${heart(30,34,1.45)}${shape(circ(48,46,9.5),'#5cc68a','#3fa66c','M38 49c6 3 14 2 20-4v12H38z')}<path d="M48 41v10M43 46h10" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/>`,
+wheels:`<path d="M2 24h10M0 34h9M3 44h10" stroke="${O}" stroke-width="3.4" stroke-linecap="round"/>${shape(circ(37,34,23),'#4a4060','#2e2740','M12 40c10 12 38 12 50 0v24H12z')}${shape(circ(37,34,17.5),'#d89a5c','#a86c3a','M18 39c8 9 30 9 38 0v16H18z')}${[0,60,120].map(a=>`<rect x="35" y="17.5" width="4" height="33" rx="1.8" fill="#8a5a30" stroke="${O}" stroke-width="1.4" transform="rotate(${a} 37 34)"/>`).join('')}${shape(circ(37,34,6),'#ffd24a','#d99a1c','M30 35h14v6H30z')}${hl(24,21,4.4,2.4,-40)}`,
+heavy:`<path d="M24 16a8 8 0 0 1 16 0" fill="none" stroke="${O}" stroke-width="9" stroke-linecap="round"/><path d="M24 16a8 8 0 0 1 16 0" fill="none" stroke="#5a5070" stroke-width="4" stroke-linecap="round"/>${shape('M18 18h28l10 36c0 3-2 5-5 5H13c-3 0-5-2-5-5z','#5a5070','#3a3248','M40 18h8l10 40H44z')}<text x="31" y="47" font-family="Fredoka" font-weight="700" font-size="20" text-anchor="middle" fill="#ffd24a" stroke="${O}" stroke-width="1.4">+1</text>${hl(20,26,2,5,15)}`,
+leech:`${shape('M6 8h11v22a7 7 0 0 0 14 0V8h11v22a18 18 0 0 1-36 0z','#e8413c','#b82a30','M4 34c6 14 30 16 40 0v26H4z')}${shape('M6 8h11v8H6z','#e6e1ee','#b9b2c8','M6 13h11v4H6z')}${shape('M31 8h11v8H31z','#e6e1ee','#b9b2c8','M31 13h11v4H31z')}${heart(48,46,.72)}<path d="M40 22c4 0 7 2 9 6M44 14c5 1 9 5 11 10" fill="none" stroke="${O}" stroke-width="3" stroke-linecap="round"/>`,
+fire:`${shape('M32 60c-14 0-22-9-22-20 0-12 9-16 11-28 7 5 9 10 9 15 4-4 6-8 6-13 10 7 18 15 18 26 0 11-8 20-22 20z','#ff8a2a','#e8552a','M8 44c8 10 30 14 48 0v18H8z')}${shape('M32 56c-7 0-11-4-11-10 0-6 4-9 6-13 3 3 4 6 4 8 2-2 4-5 4-7 4 3 8 7 8 12 0 6-4 10-11 10z','#ffd24a','#ffb12a','M20 50c6 4 16 4 24 0v8H20z')}${ball(32,46,8)}`,
+mud:`${shape('M6 46c0-6 6-7 10-8 2-5 8-8 16-8s14 3 16 8c4 1 10 2 10 8 0 5-5 8-12 8-2 3-6 4-9 2-3 2-8 2-11 0-3 1-6 0-8-2-7 0-12-3-12-8z','#9a6a3e','#704626','M4 48c12 6 44 6 56-2v14H4z')}${hl(22,38,6,2.2,-10)}${shape(circ(12,24,4),'#9a6a3e','#704626','M8 25h8v4H8z')}${shape(circ(52,20,3.4),'#9a6a3e','#704626','M48 21h8v4h-8z')}${shape(circ(34,16,2.6),'#9a6a3e','#704626','M31 17h6v3h-6z')}`,
+shield:`${shape('M32 5l22 8v15c0 15-9 25-22 31C19 53 10 43 10 28V13z','#d7d1e2','#a69dbb','M32 5l22 8v15c0 15-9 25-22 31z')}<path d="M24 20l5 7-3 7 6 6M40 18l-3 7 5 5" fill="none" stroke="#8d84a2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>${[[18,16],[46,16],[32,53]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="2.2" fill="#ffd24a" stroke="${O}" stroke-width="1.6"/>`).join('')}${hl(20,26,2.4,6,8)}`,
+frenzy:`<path d="M20 18c-3-4 3-6 0-11M30 16c-3-4 3-6 0-11M40 18c-3-4 3-6 0-11" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/><path d="M20 18c-3-4 3-6 0-11M30 16c-3-4 3-6 0-11M40 18c-3-4 3-6 0-11" fill="none" stroke="${O}" stroke-width="2" stroke-linecap="round" opacity=".35"/>${shape('M8 30h38c2 0 3 1 3 3v12c0 2-1 3-3 3H8c-3 0-5-4-5-9s2-9 5-9z','#ff6a2a','#d23c1e','M2 41h48v10H2z')}${shape('M46 26h8c2 0 3 1 3 3v20c0 2-1 3-3 3h-8z','#ffd24a','#d99a1c','M46 42h12v12H46z')}${shape(circ(10,39,6),'#4a4060','#2e2740','M3 41h14v6H3z')}${hl(28,34,10,2,0)}`,
+chain:`${shape('M36 3L14 35h13l-5 26 24-36H32l8-22z','#7fd8ff','#3aa8e8','M30 35h18L24 62z')}${hl(30,14,2,6,30)}`};
+ return I; })();
+let upicN=0;
+// clip ids must be unique in the page, so every copy gets its own
+const upIcon=(id,s)=>{ const k=upicN++; return `<svg viewBox="0 0 64 64" width="${s}" height="${s}" aria-hidden="true">${(UPSVG[id]||'').replace(/(id="|url\(#)c(\d+)/g,(m,p,d)=>p+'up'+k+'_'+d)}</svg>`; };
+function buildIcons(){ const n={}; for (const p of P.picks) n[p]=(n[p]||0)+1; return Object.keys(n).map(k=>{ const u=UPS.find(u=>u.id===k); return `<i class="upi ${UPCAT[k]||'U'}" title="${u.name}${n[k]>1?' x'+n[k]:''}">${upIcon(k,26)}${n[k]>1?`<b>${n[k]}</b>`:''}</i>`; }).join(''); }
+function buildRow(label){ const h=buildIcons(); return h?`<span class="bl">${label}</span><span class="bicons">${h}</span>`:''; }
 function buildText(){ const n={}; for (const p of P.picks) n[p]=(n[p]||0)+1; return Object.keys(n).map(k=>UPS.find(u=>u.id===k).name+(n[k]>1?' x'+n[k]:'')).join(', '); }
 
 function makeRocks(){
@@ -1567,7 +1611,8 @@ function showEnd(e){ $('#bRankEnd').hidden=!RK;
   const b=buildText();
   const M=run.mode; $('#endTitle').textContent=e.won?(run.attack?'Castles conquered!':M==='siege'?'Keep saved!':'Siege broken!'):run.keepFell?`The keep fell on wave ${wave}`:run.attack?`Sunk at castle ${wave}`:`Sunk on wave ${wave}`;
   $('#endScore').textContent=run.score.toLocaleString(); $('#endBest').hidden=!e.newBest;
-  $('#endText').textContent=(e.won?(run.attack?`You and your allies stormed all ${ROUNDS} castles on difficulty ${run.level}. `:M==='siege'?`You held the keep through all six waves on difficulty ${run.level}. `:`You broke the siege on difficulty ${run.level}. `):M==='waves'||M==='siege'&&!run.attack?`You cleared ${wave-1} wave${wave===2?'':'s'}. `:'')+`You knocked out ${run.kills} cannon${run.kills===1?'':'s'}. `+(b?`Your build: ${b}.`:'No upgrades yet.');
+  $('#endText').textContent=(e.won?(run.attack?`You and your allies stormed all ${ROUNDS} castles on difficulty ${run.level}. `:M==='siege'?`You held the keep through all six waves on difficulty ${run.level}. `:`You broke the siege on difficulty ${run.level}. `):M==='waves'||M==='siege'&&!run.attack?`You cleared ${wave-1} wave${wave===2?'':'s'}. `:'')+`You knocked out ${run.kills} cannon${run.kills===1?'':'s'}. `+(b?'':'No upgrades yet.');
+  $('#endBuild').innerHTML=buildRow('Your build:');
   $('#endGoals').innerHTML=run.goals.map(id=>{ const g=GOALS.find(g=>g.id===id); return `<li><span>★</span><span><b>${g.name}</b><small>Unlocked ${g.rtext}</small></span></li>`; }).join('')+(run.newLevel&&!run.goals.includes('win1')?`<li><span>★</span><span><b>Difficulty ${run.level+1}</b><small>Unlocked: tougher cannons, more points</small></span></li>`:'');
   const cp=run.camp!=null; $('#endStars').hidden=!cp; $('#bNext').hidden=!(cp&&e.won&&run.camp<LEVELS.length-1); $('#bRetry').classList.toggle('primary',$('#bNext').hidden); $('#bRetry').textContent=cp?(e.won?'Play again':'Try again'):'Run again'; $('#bArmory').textContent=cp?'Map':'Home';
   if (cp){ const Lv=LEVELS[run.camp], I=ISLANDS[Lv.isl], h=run.hurtN, s=run.stars;
@@ -1586,11 +1631,11 @@ function showPick(){
   $('#pickSub').textContent=chest?'Pick one upgrade, on the house.':n.type==='elite'?(second?'Pick one more upgrade.':'Pick an upgrade. You get two this time.'):'Pick one upgrade for your cannon.';
   const bo=second?null:run.bonus; $('#pickBonus').textContent=bo?`+${bo.wave} wave bonus`+(bo.clean?`, +${bo.clean} for not getting hit`:'')+(bo.fast?`, +${bo.fast} for speed`:'')+`. Score ${run.score.toLocaleString()}.`+(keep&&run.keepFixed?` The keep got ${run.keepFixed} back.`:''):'';
   $('#picks').innerHTML='';
-  for (const u of list){ const have=P.picks.filter(p=>p===u.id).length, bt=document.createElement('button'); bt.className='btn up';
-    bt.innerHTML=`<b>${u.name}</b><span>${u.desc}</span>${have?`<small>You have ${have}</small>`:''}`;
+  for (const u of list){ const have=P.picks.filter(p=>p===u.id).length, bt=document.createElement('button'); bt.className='btn up ic';
+    bt.innerHTML=`<i class="upi ${UPCAT[u.id]||'U'}">${upIcon(u.id,42)}</i><span class="upt"><b>${u.name}</b><span>${u.desc}</span>${have?`<small>You have ${have}</small>`:''}</span>`;
     bt.onclick=()=>{ $('#pick').hidden=true; if (choose(u.id)) showPick(); else afterPick(); }; $('#picks').append(bt); }
   if (!list.length){ $('#pickSub').textContent='Your cannon is fully upgraded.'; const bt=document.createElement('button'); bt.className='btn primary'; bt.textContent='Keep going'; bt.onclick=()=>{ $('#pick').hidden=true; run.picksLeft=0; if (run.story) state='map'; afterPick(); }; $('#picks').append(bt); }
-  const b=buildText(); $('#build').textContent=b?`Your cannon so far: ${b}`:'';
+  $('#build').className='kbd buildRow'; $('#build').innerHTML=buildRow('Your cannon so far:');
   $('#pick').hidden=false;
 }
 
@@ -1622,12 +1667,12 @@ function showMap(msg){
 function showShop(){
   const S=run.shop, m=me(); $('#pickTitle').textContent='Shop'; $('#pickBonus').textContent=`You have ${run.gold} gold.`; $('#pickSub').textContent='Buy what you like, then head on.';
   const box=$('#picks'); box.innerHTML='';
-  const item=(name,desc,price,off,fn)=>{ const b=document.createElement('button'); b.className='btn up'; b.disabled=off||run.gold<price;
-    b.innerHTML=`<b>${name}<em class="price">${off&&name!=='Patch up'?'Sold':price+' gold'}</em></b><span>${desc}</span>`; b.onclick=()=>{ run.gold-=price; fn(); uiSfx('pop'); showShop(); }; box.append(b); };
-  for (const u of S.offers) item(u.name,u.desc,10,!!S.sold[u.id],()=>{ u.apply(); P.picks.push(u.id); S.sold[u.id]=1; if (P.picks.filter(p=>p===u.id).length>=3) goal('stack'); });
-  item('Patch up',m.hp>=m.max?'Your hearts are full.':'Get 2 hearts back.',4,m.hp>=m.max,()=>{ m.hp=Math.min(m.max,m.hp+2); drawHp(m); });
+  const item=(name,desc,price,off,fn,ic)=>{ const b=document.createElement('button'); b.className='btn up ic'; b.disabled=off||run.gold<price;
+    b.innerHTML=`<i class="upi ${UPCAT[ic]||'D'}">${upIcon(ic,42)}</i><span class="upt"><b>${name}<em class="price">${off&&name!=='Patch up'?'Sold':price+' gold'}</em></b><span>${desc}</span></span>`; b.onclick=()=>{ run.gold-=price; fn(); uiSfx('pop'); showShop(); }; box.append(b); };
+  for (const u of S.offers) item(u.name,u.desc,10,!!S.sold[u.id],()=>{ u.apply(); P.picks.push(u.id); S.sold[u.id]=1; if (P.picks.filter(p=>p===u.id).length>=3) goal('stack'); },u.id);
+  item('Patch up',m.hp>=m.max?'Your hearts are full.':'Get 2 hearts back.',4,m.hp>=m.max,()=>{ m.hp=Math.min(m.max,m.hp+2); drawHp(m); },'heart');
   const lv=document.createElement('button'); lv.className='btn primary'; lv.textContent='Leave the shop'; lv.onclick=()=>{ $('#pick').hidden=true; state='map'; showMap(); }; box.append(lv);
-  const bt=buildText(); $('#build').textContent=bt?`Your cannon so far: ${bt}`:''; $('#pick').hidden=false; }
+  $('#build').className='kbd buildRow'; $('#build').innerHTML=buildRow('Your cannon so far:'); $('#pick').hidden=false; }
 
 // camera
 const camT={x:0,z:0};
@@ -1850,6 +1895,7 @@ const lockTxt=(type,id)=>{ if (starNeed(type,id)) return `Locked. Earn ${starNee
 function segBtn(label,on,locked,fn,sw){ const b=document.createElement('button'); b.className='btn'+(on?' on':'')+(locked?' locked':''); b.innerHTML=(sw?`<span class="sw" style="background:#${sw.toString(16).padStart(6,'0')}"></span>`:'')+(locked?'🔒 ':'')+label; b.onclick=fn; return b; }
 // approved release notes, newest first
 const NEWS=[
+  {v:73,title:'Upgrade icons',items:["Every upgrade has its own icon, coloured by type: red for attack, blue for defence, gold for utility.","Your build shows as a row of icons between waves and at the end of a run."]},
   {v:71,title:'Day and night',items:["Every third wave, night falls (except in Story). In the dark you only see cannons close to you or ones that just fired, and they can't see you either.","Fireflies come out at night."]},
   {v:69,title:'Fancy by default',items:["Fancy graphics are now on by default. If your device slows down, the game switches to Smooth for you."]},
   {v:68,title:'The old flame is back',items:["The Flamethrower has its original whoosh back."]},
