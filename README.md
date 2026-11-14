@@ -8,6 +8,9 @@ A cute 3D cannon battler for the browser, made for **GitHub Game Off 2026** (the
 
 Drive a tiny toon cannon around an island, hide in bushes, take cover behind rocks and knock out every rival cannon. After each wave you pick an upgrade.
 
+## The SHIFT
+Every third wave the island shifts from day to night. In the dark you only see cannons close to you, or ones that just fired, and they can't see you either. Fireflies come out, the fight turns into hide and seek, and then day breaks again. You can also shift cannon types mid-run by rolling over the barrels enemies drop.
+
 ## Modes
 - **Story:** six islands, 24 levels and a boss on every island.
 - **Waves:** endless, with a boss every fifth wave.

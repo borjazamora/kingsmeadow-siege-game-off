@@ -115,6 +115,8 @@ summary{font:700 15px var(--display);cursor:pointer}
 #feed{position:fixed;z-index:5;right:max(16px,env(safe-area-inset-right,0px));top:calc(64px + env(safe-area-inset-top,0px));display:grid;gap:4px;justify-items:end;pointer-events:none}
 #feed div{font-weight:800;font-size:12.5px;background:rgba(255,250,240,.9);border-radius:999px;padding:2px 10px;animation:fade 4s forwards}
 @keyframes fade{0%,80%{opacity:1}100%{opacity:0}}
+#night{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 60%,rgba(12,18,52,0) 0,rgba(12,18,52,.05) 16vmin,rgba(12,18,52,.62) 40vmin,rgba(8,12,40,.8) 85vmin)}
+body.home #night{display:none}
 #vig{position:fixed;inset:0;z-index:4;pointer-events:none;background:radial-gradient(ellipse at 50% 55%,transparent 55%,rgba(42,34,51,.22))}
 #home{position:fixed;inset:0;z-index:9;display:grid;grid-template-rows:auto auto 1fr auto;pointer-events:none;padding:calc(14px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:linear-gradient(rgba(42,34,51,.18),transparent 26%,transparent 62%,rgba(42,34,51,.35))}
 #home[hidden]{display:none}
@@ -231,7 +233,7 @@ button:focus-visible{outline:3px solid var(--gold-deep);outline-offset:2px}
 <div id="tools2"><button class="btn" id="bHelp" aria-label="How to play">?</button><button class="btn" id="bZin" aria-label="Zoom in">+</button><button class="btn" id="bZout" aria-label="Zoom out">&minus;</button></div>
 <div id="joy" aria-label="Move joystick"><i></i></div>
 <div id="fire" aria-hidden="true"><i></i></div>
-<div id="vig" aria-hidden="true"></div>
+<div id="vig" aria-hidden="true"></div> <div id="night" aria-hidden="true"></div>
 <canvas id="radar" width="168" height="168" aria-hidden="true"></canvas>
 <div id="toast" class="card"></div>
 
@@ -255,7 +257,7 @@ button:focus-visible{outline:3px solid var(--gold-deep);outline-offset:2px}
     <button class="btn primary play" id="bPlay">Play</button>
     <div class="homeSub" id="homeSub"></div>
   </div>
-  <span class="ver" aria-label="Version 70">v70</span>
+  <span class="ver" aria-label="Version 71">v71</span>
 </div>
 <div id="custom" class="overlay sheet" hidden>
   <div class="modal card">
@@ -288,7 +290,8 @@ button:focus-visible{outline:3px solid var(--gold-deep);outline-offset:2px}
       <li>Brutes, Lobbers and Longshots sometimes drop their barrel. Drive over it to switch your cannon to that type for the rest of the run. Your upgrades come with you.</li>
       <li>Siege has two sides. Defend the keep, or Storm the castle: you and two allies attack a castle that gets bigger every round. Break the stones one by one, smash the gate to stop cannons coming out, watch out for the towers, and knock down the keep inside to win the round.</li>
       <li>Tap the right side to fire at the closest cannon you can see. Hidden, off-screen or behind-a-rock cannons are skipped, so aim those yourself.</li>
-      <li>The radar on the left shows the whole island: you in gold, enemies in red, allies in blue. Cannons hiding in bushes don't show. Use + and &minus; to zoom.</li>
+      <li>The radar on the left shows the whole island: you in gold, enemies in red, allies in blue. Cannons hiding in bushes don't show.</li>
+      <li>Every third wave night falls (except in Story). In the dark you only see cannons close to you, or ones that just fired, and they can't see you either. Fireflies come out too. Use + and &minus; to zoom.</li>
       <li>Daily: six waves on today's island, the same for everyone, with a boss at the end. You pick an upgrade after each wave. Everyone uses the Classic cannon on difficulty 1.</li>
       <li>Every knocked-out cannon drops a heart. Clearing a wave gives you two back.</li>
       <li>Score comes from knockouts, clearing waves, clearing them fast, and clearing them without getting hit. Higher difficulty scores more.</li>
@@ -363,7 +366,8 @@ const COLORS=[0xf2b43a,0x6b4a8f,0xe5453b,0x37b4c8,0x5cc68a,0xff8fb8,0x8a5a33,0x3
 let cannons=[], shells=[], hearts=[], rocks=[], bushes=[], muds=[], T=0, ring=RING0, outT=new Map(), state='intro', auto=false, placeOrder=[];
 const events=[];
 const ringAt=t=>ARENA+5; // no shrinking ring in the siege
-let P=null, wave=0, kills=0, hitCount=0, run=null;
+let P=null, wave=0, kills=0, hitCount=0, run=null, night=false;
+const NIGHT_R=8; // at night you only see cannons this close, unless they just fired
 const SAVE_KEY='kingsmeadow-siege-v1';
 const CANNONS={
   classic:{name:'Classic',desc:'Straight cannonballs that fly far.'},
@@ -581,11 +585,13 @@ function route(c,tx,tz){ if (!river) return {x:tx,z:tz}; const a=rLoc(c.x,c.z), 
   const en=rWorld(s,river.d+sa*(river.w+c.r+.7)); if (Math.hypot(en.x-c.x,en.z-c.z)>.5) return en;
   return rWorld(s,river.d+sb*(river.w+c.r+1)); }
 // a cannon in a bush is hidden unless you are close or it just fired
+// at night a cannon is lost in the dark unless a rival is close: enemies are judged from you, you from the nearest enemy
+const inDark=c=>{ const m=cannons[0]; if (c===m) return !cannons.some(o=>o.team===1&&o.alive&&Math.hypot(o.x-m.x,o.z-m.z)<NIGHT_R); return c.team===1 && Math.hypot(c.x-m.x,c.z-m.z)>NIGHT_R; };
 const seen=(by,o)=>!o.hidden || Math.hypot(by.x-o.x,by.z-o.z)<3.5;
 // shells still flying when a wave or run ends would freeze in mid air, so clear them
 function clearShells(){ for (const s of shells) events.push({t:'gone',s}); shells=[]; }
 function newMatch(){
-  clearShells();
+  clearShells(); night=false;
   const mode=SAVE.choice.mode, daily=mode==='daily', camp=mode==='story'&&!home&&campLevel!=null;
   if (daily){ rnd=mulberry(dayKey()); rnd.daily=true; } else if (camp){ rnd=mulberry(9001+campLevel*131); rnd.daily=true; } else if (rnd.daily) rnd=Math.random;
   const isl=camp?LEVELS[campLevel].isl:daily?Math.floor(rnd()*ISLANDS.length):0, I=ISLANDS[isl];
@@ -625,6 +631,7 @@ function startWave(n){
     makeEnemy(kind,x,z,id,hpM); id++;
   }
   if (run.attack) setupCastle();
+  { const nn=!home && run.camp==null && wave%3===0; if (nn!==night){ night=nn; events.push({t:'night',on:nn}); } }
   state='play'; events.push({t:'wave',n:wave,boss:n.type==='boss',elite:n.type==='elite',castle:!!run.attack});
 }
 let nextId=1;
@@ -858,7 +865,7 @@ function simStep(dt){
   if (state!=='play') return;
   T+=dt; ring=ringAt(T);
   for (const c of cannons){ if (!c.alive) continue; c.reload-=dt; c.hitT-=dt; c.teleT=(c.teleT||0)-dt;
-    if (c.charge){ c.charge.t-=dt; c.aim=c.charge.ang; if (c.charge.t<=0){ const q=c.charge; c.charge=null; fire(c,q.ang,q.dist,q.wob,true); } } c.recoil=(c.recoil||0)-dt; c.reveal=(c.reveal||0)-dt; c.slowT=(c.slowT||0)-dt; c.hidden=c.reveal<=0 && inBush(c); }
+    if (c.charge){ c.charge.t-=dt; c.aim=c.charge.ang; if (c.charge.t<=0){ const q=c.charge; c.charge=null; fire(c,q.ang,q.dist,q.wob,true); } } c.recoil=(c.recoil||0)-dt; c.reveal=(c.reveal||0)-dt; c.slowT=(c.slowT||0)-dt; c.hidden=c.reveal<=0 && (inBush(c) || night && inDark(c)); }
   for (const c of cannons){
     if (!c.alive) continue;
     let want;
@@ -953,7 +960,7 @@ function drawFrame(dt){
   renderer.setRenderTarget(post.rt); renderer.render(scene,camera); renderer.setRenderTarget(null); renderer.render(postScene,postCam); }
 const SKY=new THREE.Color(0x9fd6f2); scene.background=SKY; scene.fog=new THREE.Fog(SKY,38,85);
 const camera=new THREE.PerspectiveCamera(42,1,.1,200);
-scene.add(new THREE.HemisphereLight(0xd6eeff,0x7a6a9a,1.5));
+const hemi=new THREE.HemisphereLight(0xd6eeff,0x7a6a9a,1.5); scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xfff0d2,3.0);
 sun.castShadow=true; sun.shadow.mapSize.set(2048,2048);
 Object.assign(sun.shadow.camera,{left:-18,right:18,top:18,bottom:-18,near:1,far:80});
@@ -1521,6 +1528,7 @@ function handleEvents(){
     else if (e.t==='wave'){ sfx(e.boss?'boss':'wave'); for (const m of scene.children.filter(o=>o.userData.cannon && !cannons.some(c=>c.root===o))) scene.remove(m); if (!castle) buildCastle(); { const I=ISLANDS[run.isl]; if (I&&I.tip&&e.n===1&&!SAVE.seen['isl'+I.name]){ SAVE.seen['isl'+I.name]=1; persist(); setTimeout(()=>toast(I.tip,'alert intro',4200),1600); } }
       toast(e.castle?`Castle ${e.n}`:run.camp!=null&&e.n===1&&!e.boss?LEVELS[run.camp].name:e.boss?`${(cannons.find(c=>c.K&&c.K.boss)||{name:'Boss'}).name}!`:e.elite?'Elite wave!':`Wave ${e.n}`,e.boss||e.elite?'alert':'gold',1400); drawHp(me()); }
     else if (e.t==='stage'){ sfx('boss'); setTimeout(()=>toast(`Stage ${e.n}: tougher cannons!`,'alert',2200),1300); }
+    else if (e.t==='night'){ if (e.on){ const first=!run.nightSeen; run.nightSeen=true; setTimeout(()=>toast(first?'Night falls! Cannons vanish in the dark until they fire':'Night falls','alert',first?3200:1600),1500); } else setTimeout(()=>toast('Day breaks','gold',1300),1500); }
     else if (e.t==='camp'){ sfx('heart'); drawHp(me()); }
     else if (e.t==='rebuilt'){ e.c.rise=REDUCE?0:.7; sfx('hammer',near(e.c.x,e.c.z)); puff(e.c.x,.3,e.c.z,8,0xb8b0a0,1.2); chunks(e.c.x,.4,e.c.z,0x9f97ad,6); if (!run.towerMsg){ run.towerMsg=true; toast('Tower rebuilt! Knock it down again','alert',1800); } }
     else if (e.t==='clear'){ sfx('clear'); drawHp(me()); toast(`Wave ${e.n} cleared`,'gold',1100); setTimeout(showPick,TEST&&auto?0:1100); }
@@ -1842,6 +1850,7 @@ const lockTxt=(type,id)=>{ if (starNeed(type,id)) return `Locked. Earn ${starNee
 function segBtn(label,on,locked,fn,sw){ const b=document.createElement('button'); b.className='btn'+(on?' on':'')+(locked?' locked':''); b.innerHTML=(sw?`<span class="sw" style="background:#${sw.toString(16).padStart(6,'0')}"></span>`:'')+(locked?'🔒 ':'')+label; b.onclick=fn; return b; }
 // approved release notes, newest first
 const NEWS=[
+  {v:71,title:'Day and night',items:["Every third wave, night falls (except in Story). In the dark you only see cannons close to you or ones that just fired, and they can't see you either.","Fireflies come out at night."]},
   {v:69,title:'Fancy by default',items:["Fancy graphics are now on by default. If your device slows down, the game switches to Smooth for you."]},
   {v:68,title:'The old flame is back',items:["The Flamethrower has its original whoosh back."]},
   {v:67,title:'Sharper cannons',items:["Every cannon has spoked wheels with iron tyres, a proper gun carriage and a shaped barrel."]},
@@ -1982,8 +1991,25 @@ function render(dt,t){
   if (sEl.dataset.k!==sk){ sEl.dataset.k=sk; if (st) sEl.textContent=st; else if (wd!=null) sEl.innerHTML=`Wind <i style="display:inline-block;font-style:normal;transform:rotate(${wd}deg)">↑</i>`; else sEl.textContent=''; } sEl.hidden=!sk;
   const nl=cannons.filter(o=>o.team===1&&o.alive).length, txt=castle?(castle.gate.hp>0?`Gate ${Math.ceil(castle.gate.hp)}`:'Gate down'):nl?`${nl} left`:'Clear';
   if (rEl.textContent!==txt) rEl.textContent=txt; rEl.className='';
-  drawFrame(dt);
+  dayNight(dt); drawFrame(dt);
 }
+// day and night: the light, sky and fog fade over a couple of seconds, and fireflies drift over the grass at night
+const DAY_SKY=new THREE.Color(), NIGHT_SKY=new THREE.Color(0x1d2748), SUN_DAY=new THREE.Color(0xfff0d2), SUN_NIGHT=new THREE.Color(0x9fb6ff), HEMI_DAY=new THREE.Color(0xd6eeff), HEMI_NIGHT=new THREE.Color(0x5a6fb8);
+let nightK=0, flies=null; const nightEl=document.getElementById('night');
+function makeFlies(){ const N=90, pos=new Float32Array(N*3), g=new THREE.BufferGeometry(); flies={g,seed:[]};
+  for (let k=0;k<N;k++){ const a=Math.random()*Math.PI*2, d=Math.sqrt(Math.random())*(ARENA-1); flies.seed.push({x:Math.cos(a)*d,z:Math.sin(a)*d,y:.4+Math.random()*1.6,p:Math.random()*9,sp:.3+Math.random()*.5}); }
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  const c=document.createElement('canvas'); c.width=c.height=64; const x=c.getContext('2d'), gr=x.createRadialGradient(32,32,0,32,32,32); gr.addColorStop(0,'rgba(255,255,220,1)'); gr.addColorStop(.25,'rgba(255,240,140,.9)'); gr.addColorStop(1,'rgba(255,220,80,0)'); x.fillStyle=gr; x.fillRect(0,0,64,64);
+  const tx=new THREE.CanvasTexture(c); flies.m=new THREE.PointsMaterial({map:tx,size:.5,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,color:0xfff3a0});
+  flies.pts=new THREE.Points(g,flies.m); flies.pts.frustumCulled=false; scene.add(flies.pts); }
+function dayNight(dt){ const want=night&&!home?1:0;
+  if (nightK===0&&!want){ DAY_SKY.copy(SKY); if (nightEl.style.opacity!=='0') nightEl.style.opacity='0'; return; }
+  nightK=want?Math.min(1,nightK+dt/2):Math.max(0,nightK-dt/2); const k=nightK; nightEl.style.opacity=k.toFixed(3);
+  SKY.copy(DAY_SKY).lerp(NIGHT_SKY,k*.92); scene.fog.color.copy(SKY);
+  hemi.intensity=1.5*(1-.6*k); hemi.color.copy(HEMI_DAY).lerp(HEMI_NIGHT,k); sun.intensity=3*(1-.72*k); sun.color.copy(SUN_DAY).lerp(SUN_NIGHT,k);
+  if (!flies) makeFlies(); flies.m.opacity=k; flies.pts.visible=k>0;
+  if (k>0){ const p=flies.g.attributes.position.array, t=performance.now()/1000; flies.seed.forEach((f,i)=>{ p[i*3]=f.x+Math.sin(t*f.sp+f.p)*1.2; p[i*3+1]=f.y+Math.sin(t*1.7*f.sp+f.p*2)*.35; p[i*3+2]=f.z+Math.cos(t*f.sp*.8+f.p)*1.2; }); flies.g.attributes.position.needsUpdate=true; flies.m.size=.75+.15*Math.sin(t*3); }
+  if (k===0) DAY_SKY.copy(SKY); }
 function loop(now){
   requestAnimationFrame(loop);
   const dt=Math.min(.05,(now-last)/1000); last=now;
