@@ -201,7 +201,7 @@ button:focus-visible{outline:3px solid var(--gold-deep);outline-offset:2px}
 #fire:not(.ready) i{filter:grayscale(.8) brightness(.95)}
 #fire.on{background:rgba(255,230,220,.6)}
 @media (pointer:coarse){#joy,#fire{display:block}}
-#toast{position:fixed;z-index:6;left:50%;top:26%;transform:translate(-50%,-8px) scale(.9);padding:8px 18px;font:700 22px var(--display);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;white-space:nowrap}
+#toast{position:fixed;z-index:6;left:50%;top:26%;transform:translate(-50%,-8px) scale(.9);padding:8px 18px;font:700 22px var(--display);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;text-align:center;line-height:1.2}
 #toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
 #toast.alert{background:var(--danger);color:var(--paper)}
 #toast.gold{background:var(--gold)}
@@ -257,7 +257,7 @@ button:focus-visible{outline:3px solid var(--gold-deep);outline-offset:2px}
     <button class="btn primary play" id="bPlay">Play</button>
     <div class="homeSub" id="homeSub"></div>
   </div>
-  <span class="ver" aria-label="Version 71">v71</span>
+  <span class="ver" aria-label="Version 72">v72</span>
 </div>
 <div id="custom" class="overlay sheet" hidden>
   <div class="modal card">
