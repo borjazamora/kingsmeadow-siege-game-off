@@ -267,7 +267,7 @@ button:focus-visible{outline:3px solid var(--gold-deep);outline-offset:2px}
     <button class="btn primary play" id="bPlay">Play</button>
     <div class="homeSub" id="homeSub"></div>
   </div>
-  <span class="ver" aria-label="Version 74">v74</span>
+  <span class="ver" aria-label="Version 75">v75</span>
 </div>
 <div id="custom" class="overlay sheet" hidden>
   <div class="modal card">
@@ -2061,7 +2061,7 @@ function dayNight(dt){ const want=night&&!home?1:0;
   SKY.copy(DAY_SKY).lerp(NIGHT_SKY,k*.92); scene.fog.color.copy(SKY);
   hemi.intensity=1.5*(1-.6*k); hemi.color.copy(HEMI_DAY).lerp(HEMI_NIGHT,k); sun.intensity=3*(1-.72*k); sun.color.copy(SUN_DAY).lerp(SUN_NIGHT,k);
   if (!flies) makeFlies(); flies.m.opacity=k; flies.pts.visible=k>0;
-  if (k>0){ const p=flies.g.attributes.position.array, t=performance.now()/1000; flies.seed.forEach((f,i)=>{ p[i*3]=f.x+Math.sin(t*f.sp+f.p)*1.2; p[i*3+1]=f.y+Math.sin(t*1.7*f.sp+f.p*2)*.35; p[i*3+2]=f.z+Math.cos(t*f.sp*.8+f.p)*1.2; }); flies.g.attributes.position.needsUpdate=true; flies.m.size=.75+.15*Math.sin(t*3); }
+  if (k>0){ const p=flies.g.attributes.position.array, t=performance.now()/1000; flies.seed.forEach((f,i)=>{ p[i*3]=f.x+Math.sin(t*f.sp+f.p)*1.2; p[i*3+1]=f.y+Math.sin(t*1.7*f.sp+f.p*2)*.35; p[i*3+2]=f.z+Math.cos(t*f.sp*.8+f.p)*1.2; }); flies.g.attributes.position.needsUpdate=true; flies.m.size=.36+.08*Math.sin(t*3); }
   if (k===0) DAY_SKY.copy(SKY); }
 function loop(now){
   requestAnimationFrame(loop);
