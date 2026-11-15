@@ -267,7 +267,7 @@ button:focus-visible{outline:3px solid var(--gold-deep);outline-offset:2px}
     <button class="btn primary play" id="bPlay">Play</button>
     <div class="homeSub" id="homeSub"></div>
   </div>
-  <span class="ver" aria-label="Version 75">v75</span>
+  <span class="ver" aria-label="Version 76">v76</span>
 </div>
 <div id="custom" class="overlay sheet" hidden>
   <div class="modal card">
@@ -978,6 +978,10 @@ function endRun(won){
 const canvas=$('#c');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+// phones can drop the 3D view when graphics memory runs out: pause, fall back to Smooth, and reload if it never comes back
+let glLost=0;
+canvas.addEventListener('webglcontextlost',e=>{ e.preventDefault(); SAVE.settings.fx=false; persist(); if (!home&&midRun&&!paused) openHub(true); clearTimeout(glLost); glLost=setTimeout(()=>location.reload(),4000); });
+canvas.addEventListener('webglcontextrestored',()=>{ clearTimeout(glLost); applyIsland(run?run.isl:0); toast('Graphics reset, switched to Smooth','gold',2200); });
 renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const scene=new THREE.Scene();
 const post={rt:null,size:new THREE.Vector2(),focus:.5}, postCam=new THREE.OrthographicCamera(-1,1,1,-1,0,1), postScene=new THREE.Scene();
@@ -1901,6 +1905,7 @@ const lockTxt=(type,id)=>{ if (starNeed(type,id)) return `Locked. Earn ${starNee
 function segBtn(label,on,locked,fn,sw){ const b=document.createElement('button'); b.className='btn'+(on?' on':'')+(locked?' locked':''); b.innerHTML=(sw?`<span class="sw" style="background:#${sw.toString(16).padStart(6,'0')}"></span>`:'')+(locked?'🔒 ':'')+label; b.onclick=fn; return b; }
 // approved release notes, newest first
 const NEWS=[
+  {v:76,title:"Graphics hiccups",items:["If your phone drops the 3D view mid-fight, the game now pauses, switches to Smooth graphics and picks up where you were, instead of freezing."]},
   {v:74,title:'Hide and seek',items:["Enemies no longer know where you're hiding. They hunt where they last saw you, then search the island.","Firing still gives you away, so pick your moment."]},
   {v:73,title:'Upgrade icons',items:["Every upgrade has its own icon, coloured by type: red for attack, blue for defence, gold for utility.","Your build shows as a row of icons between waves and at the end of a run."]},
   {v:71,title:'Day and night',items:["Every third wave, night falls (except in Story). In the dark you only see cannons close to you or ones that just fired, and they can't see you either.","Fireflies come out at night."]},
