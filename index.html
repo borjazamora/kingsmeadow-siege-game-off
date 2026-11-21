@@ -1930,6 +1930,7 @@ const lockTxt=(type,id)=>{ if (starNeed(type,id)) return `Locked. Earn ${starNee
 function segBtn(label,on,locked,fn,sw){ const b=document.createElement('button'); b.className='btn'+(on?' on':'')+(locked?' locked':''); b.innerHTML=(sw?`<span class="sw" style="background:#${sw.toString(16).padStart(6,'0')}"></span>`:'')+(locked?'🔒 ':'')+label; b.onclick=fn; return b; }
 // approved release notes, newest first
 const NEWS=[
+  {v:79,title:"Polished cannons",items:["Cannons got a polish: cast-iron barrels that catch the light and real wood grain on the carriages.","Your gunner has more personality: hair under the hat, a powder satchel, coat buttons and a hat band.","Knockouts go out with a bigger bang: a fireball, a blast ring and a cloud of smoke.","On computers, a soft back light makes every cannon stand out from the grass."]},
   {v:77,title:"Night music",items:["Night waves have their own song now: a soft lullaby while you hunt in the dark."]},
   {v:76,title:"Graphics hiccups",items:["If your phone drops the 3D view mid-fight, the game now pauses, switches to Smooth graphics and picks up where you were, instead of freezing."]},
   {v:74,title:'Hide and seek',items:["Enemies no longer know where you're hiding. They hunt where they last saw you, then search the island.","Firing still gives you away, so pick your moment."]},
