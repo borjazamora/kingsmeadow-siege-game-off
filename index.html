@@ -267,7 +267,7 @@ button:focus-visible{outline:3px solid var(--gold-deep);outline-offset:2px}
     <button class="btn primary play" id="bPlay">Play</button>
     <div class="homeSub" id="homeSub"></div>
   </div>
-  <span class="ver" aria-label="Version 78">v78</span>
+  <span class="ver" aria-label="Version 79">v79</span>
 </div>
 <div id="custom" class="overlay sheet" hidden>
   <div class="modal card">
@@ -1153,8 +1153,9 @@ function paintify(root){ const drop=[];
     if (m===outlineMat||m===outlineBig||m===outlineBasic){ drop.push(o); return; }
     if (!m||!m.isMeshToonMaterial) return;
     let p=painted2.get(m); if (!p){ const hsl={}; m.color.getHSL(hsl); const woody=hsl.h>.04&&hsl.h<.12&&hsl.s>.25&&hsl.l<.6;
+      const smooth=hsl.l>.75; // skin, scarves and white trims stay smooth: grain on faces reads as blotches
       const metal=!m.map&&hsl.s<.3&&hsl.l<.45, gold=!m.map&&hsl.h>.1&&hsl.h<.17&&hsl.s>.7&&hsl.l>.45; // iron and gold catch the light instead of looking painted
-      const o2={color:m.color.clone(),map:m.map||(woody?woodGrainT:grainT),transparent:m.transparent,opacity:m.opacity,side:m.side};
+      const o2={color:m.color.clone(),map:m.map||(woody?woodGrainT:smooth?null:grainT),transparent:m.transparent,opacity:m.opacity,side:m.side};
       p=metal||gold?new THREE.MeshPhongMaterial({...o2,specular:gold?0xb09050:0xb4aec4,shininess:gold?50:20}):lam(o2); painted2.set(m,p); }
     o.material=p; });
   for (const o of drop) o.parent.remove(o); }
@@ -1394,7 +1395,7 @@ function buildCannon(c){
   const back=part(sph(.2),iron); back.position.set(0,.02,-.22); turret.add(back);
   { const kn=part(sph(.065),iron); kn.position.set(0,-.6,0); barrel.add(kn); for (const s of [-1,1]){ const tr=part(GEO.trun ||= new THREE.CylinderGeometry(.06,.06,.12,12),iron); tr.rotation.z=Math.PI/2; tr.position.set(s*.25,-.12,0); barrel.add(tr); } }
   // the gunner: face, arms and a lit match, and reactions to what happens (see render)
-  const g=new THREE.Group(); g.position.set(0,.6,-.6); g.scale.setScalar(1.15); body.add(g); const shM=shirt(c.color);
+  const g=new THREE.Group(); g.position.set(0,.6,-.62); g.scale.setScalar(1.35); body.add(g); const shM=shirt(c.color);
   const tor=part(GEO.tor2 ||= new THREE.CapsuleGeometry(.15,.12,6,14),shM); tor.position.y=.13; g.add(tor);
   const belt=new THREE.Mesh(GEO.belt ||= new THREE.TorusGeometry(.152,.026,6,20),toon(0x5a3a22)); belt.rotation.x=Math.PI/2; belt.position.y=.05; g.add(belt);
   const buckle=new THREE.Mesh(GEO.buck ||= new THREE.BoxGeometry(.06,.05,.02),toon(0xffd24a)); buckle.position.set(0,.05,.155); g.add(buckle);
@@ -1419,6 +1420,14 @@ function buildCannon(c){
   if (SK.hat==='tricorn'){ const hat=part(GEO.tri ||= new THREE.CylinderGeometry(.27,.27,.07,3),toon(0x2a2233)); hat.position.y=.15; hat.rotation.y=Math.PI; hg.add(hat); const top=part(GEO.trit ||= new THREE.CylinderGeometry(.1,.13,.12,12),toon(0x2a2233)); top.position.y=.2; hg.add(top); const pl=new THREE.Mesh(sph(.06),shirt(c.color)); pl.position.set(.1,.26,0); pl.scale.set(.6,1.6,.6); pl.rotation.z=-.5; hg.add(pl); }
   else { const hat=part(GEO.hat2 ||= new THREE.CylinderGeometry(.13,.18,.13,14),shirt(c.color)); hat.position.y=.15; hg.add(hat); const brim=part(GEO.brim ||= new THREE.CylinderGeometry(.21,.21,.025,18),shirt(c.color)); brim.position.set(0,.09,.03); hg.add(brim);
     if (SK.hat==='pompom'){ const pp=part(sph(.075),toon(0xffffff)); pp.position.y=.26; hg.add(pp); } }
+  { // what the camera sees most: hair under the hat, a powder satchel on a strap, coat buttons and a hat band
+    const HAIR=[0x5a3a22,0x2a2233,0xb7793a,0x8a3a22,0xe0c070], hairM=GEO['hair'+c.id%5] ||= toon(HAIR[c.id%5]);
+    const hair=part(GEO.hairS ||= new THREE.SphereGeometry(.178,18,12,0,Math.PI*2,0,Math.PI*.62),hairM,false); hair.position.set(0,.012,-.022); hair.rotation.x=-.5; hg.add(hair);
+    const bag=part(GEO.bag ||= new THREE.BoxGeometry(.17,.15,.08),toon(0x7a4f2c)); bag.position.set(.05,.1,-.17); bag.rotation.z=-.15; g.add(bag);
+    const flap=new THREE.Mesh(GEO.flap ||= new THREE.BoxGeometry(.18,.06,.09),toon(0x5a3a22)); flap.position.set(.05,.16,-.17); flap.rotation.z=-.15; g.add(flap);
+    const strap=new THREE.Mesh(GEO.strap ||= new THREE.TorusGeometry(.158,.016,6,24),toon(0x5a3a22)); strap.position.y=.17; strap.rotation.set(Math.PI/2,.55,0); g.add(strap);
+    for (const y of [.1,.17]){ const b=new THREE.Mesh(GEO.btn ||= new THREE.SphereGeometry(.019,8,6),toon(0xffd24a)); b.position.set(-.03,y,.148); g.add(b); }
+    if (SK.hat!=='tricorn'){ const hb=new THREE.Mesh(GEO.hband ||= new THREE.CylinderGeometry(.176,.184,.04,18,1,true),toon(INK)); hb.position.y=.11; hg.add(hb); } }
   c.gun={g,hg,aL,aR,eyes,brows,mouth,blink:0,bT:0};
   if (band){ for (const y of [-.22,.3]){ const r=new THREE.Mesh(GEO.band ||= new THREE.TorusGeometry(.215,.04,8,20),band); r.rotation.x=Math.PI/2; r.position.y=y; barrel.add(r); } }
   if (SK.sprinkles){ const SP=[0xffffff,0xffd24a,0x7fd3f0,0x8fe08a,0xb48cff]; for (let k=0;k<10;k++){ const m=new THREE.Mesh(GEO.spr ||= new THREE.CapsuleGeometry(.018,.05,3,6),toon(SP[k%5])); const side=k%2?1:-1; m.position.set(side*.37,.3+((k*37)%9)/9*.12,-.42+((k*53)%10)/10*.84); m.rotation.set(0,0,Math.PI/2+(k%3-1)*.6); body.add(m); } }
@@ -1573,6 +1582,12 @@ function musicTick(){ const c=AU.ctx; if (!c || c.state!=='running') return;
 const ringFxG=new THREE.RingGeometry(.8,1,40);
 function fx(m,o){ scene.add(m); particles.push(Object.assign({m,vx:0,vy:0,vz:0,size:1},o,{max:o.life})); }
 function flash(x,y,z,size=1,color=0xfff1b0){ if (REDUCE) return; fx(new THREE.Mesh(smokeG,new THREE.MeshBasicMaterial({color,transparent:true,depthWrite:false})),{k:'f',life:.14,size:size*2.2}); particles[particles.length-1].m.position.set(x,y,z); }
+// knockouts get a proper kaboom: an orange fireball, a soft additive glow, a white blast ring, embers and dark smoke
+const glowT=(()=>{ const c=document.createElement('canvas'); c.width=c.height=128; const x=c.getContext('2d'), g=x.createRadialGradient(64,64,0,64,64,64); g.addColorStop(0,'rgba(255,255,240,1)'); g.addColorStop(.25,'rgba(255,220,140,.9)'); g.addColorStop(.6,'rgba(255,140,40,.35)'); g.addColorStop(1,'rgba(255,100,20,0)'); x.fillStyle=g; x.fillRect(0,0,128,128); const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t; })();
+function kaboom(x,z){ if (REDUCE) return;
+  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowT,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending})); glow.position.set(x,1,z); fx(glow,{k:'f',life:.5,size:4.2});
+  fx(new THREE.Mesh(smokeG,new THREE.MeshBasicMaterial({color:0xff8a2a,transparent:true,depthWrite:false})),{k:'f',life:.32,size:2.6}); particles[particles.length-1].m.position.set(x,.9,z);
+  shock(x,z,4.2,0xffffff); chunks(x,.9,z,0xffb040,7); puff(x,1,z,6,0x5a5260,1.7); }
 function shock(x,z,size=1,color=0xffffff){ if (REDUCE) return; const m=new THREE.Mesh(ringFxG,new THREE.MeshBasicMaterial({color,transparent:true,depthWrite:false})); m.rotation.x=-Math.PI/2; m.position.set(x,.08,z); fx(m,{k:'w',life:.35,size}); }
 function floatText(x,z,txt){ const c=document.createElement('canvas'); c.width=256; c.height=96; const g=c.getContext('2d'); g.font='700 56px Fredoka, sans-serif'; g.textAlign='center'; g.lineWidth=10; g.strokeStyle='#2a2233'; g.lineJoin='round'; g.strokeText(txt,128,68); g.fillStyle='#ffd24a'; g.fillText(txt,128,68);
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false})); sp.scale.set(2.4,.9,1); sp.position.set(x,2.4,z); sp.renderOrder=7; fx(sp,{k:'t',life:1.1,vy:1.4}); }
@@ -1616,7 +1631,7 @@ function handleEvents(){
     else if (e.t==='tele'){ sfx('tele',near(e.c.x,e.c.z)); }
     else if (e.t==='boom'){ { const v=near(e.x,e.z); if (e.water) sfx('water',v); else if (e.rock) sfx('rock',v); else sfx('boom',v,!!(e.big||e.splash)); } if (e.water) puff(e.x,0,e.z,4,forest&&forest.visible?0xd9c7a4:0xd8f2ff); else if (e.rock) { chunks(e.x,e.y,e.z,0xa59fb6,6); puff(e.x,e.y,e.z,3); } else { puff(e.x,Math.max(.2,e.y),e.z,e.big?7:3,e.big?0xffd27a:0xf3ead6,e.splash?e.splash*1.4:e.big?1.3:.8); if (e.big||e.splash){ flash(e.x,Math.max(.3,e.y),e.z,e.splash?e.splash*.8:.8); shock(e.x,e.z,e.splash?e.splash*1.3:1.2); } } }
     else if (e.t==='hit'){ if (e.c===me()) sfx('hurt'); else if (e.by===me()) sfx('hit'); drawHp(e.c); flash(e.c.x,.8,e.c.z,.9,0xffffff); if (e.c===me()){ buzz(60); toast('Ouch!','alert',700); shake=REDUCE?0:.3; } else if (e.by===me()) toast('Hit!','gold',600); }
-    else if (e.t==='ko'){ sfx('boom',near(e.c.x,e.c.z),true); if (e.by===me()) sfx('ko'); chunks(e.c.x,.6,e.c.z,0x9a6a3e,12); chunks(e.c.x,.8,e.c.z,e.c.color||0xe5453b,6); chunks(e.c.x,.6,e.c.z,0x4a4556,4); puff(e.c.x,.6,e.c.z,8,0x8a8494,1.4); flash(e.c.x,.8,e.c.z,1.6); shock(e.c.x,e.c.z,2.6,0xffd24a); if (e.pts) floatText(e.c.x,e.c.z,'+'+e.pts.toLocaleString()); if (e.by===me()) shake=Math.max(shake,REDUCE?0:.2); feed(e.pts?`${e.c.name} +${e.pts.toLocaleString()}`:e.why==='ring'?`${e.c.name} got caught by the ring`:`${e.by.name} knocked out ${e.c.name}`); if (e.by===me()){ buzz(25); toast(`You knocked out ${e.c.name}`,'gold',1400); } }
+    else if (e.t==='ko'){ sfx('boom',near(e.c.x,e.c.z),true); if (e.by===me()) sfx('ko'); chunks(e.c.x,.6,e.c.z,0x9a6a3e,12); chunks(e.c.x,.8,e.c.z,e.c.color||0xe5453b,6); chunks(e.c.x,.6,e.c.z,0x4a4556,4); puff(e.c.x,.6,e.c.z,8,0x8a8494,1.4); flash(e.c.x,.8,e.c.z,1.6); shock(e.c.x,e.c.z,2.6,0xffd24a); kaboom(e.c.x,e.c.z); if (e.pts) floatText(e.c.x,e.c.z,'+'+e.pts.toLocaleString()); if (e.by===me()) shake=Math.max(shake,REDUCE?0:.32); feed(e.pts?`${e.c.name} +${e.pts.toLocaleString()}`:e.why==='ring'?`${e.c.name} got caught by the ring`:`${e.by.name} knocked out ${e.c.name}`); if (e.by===me()){ buzz(25); toast(`You knocked out ${e.c.name}`,'gold',1400); } }
     else if (e.t==='drop'){ const m=part(heartG,heartM,true,true); m.userData.heart=true; m.scale.setScalar(1.25); m.position.set(e.h.x,.9,e.h.z); scene.add(m); e.h.mesh=m; }
     else if (e.t==='heal'){ if (e.c===me()) sfx('heart'); if (e.h.mesh) scene.remove(e.h.mesh); drawHp(e.c); puff(e.h.x,.8,e.h.z,5,0xff9fb0,.9); if (e.c===me()) toast('+1 heart','gold',900); }
     else if (e.t==='fade'){ if (e.h.mesh) scene.remove(e.h.mesh); puff(e.h.x,.8,e.h.z,3,0xf3ead6,.7); }
